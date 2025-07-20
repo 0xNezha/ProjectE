@@ -26,6 +26,15 @@ module.exports = {
         }
       });
 
+      // 修复 webpack 插件兼容性问题
+      webpackConfig.plugins = webpackConfig.plugins.filter(plugin => {
+        // 移除可能导致 validateOptions 错误的插件
+        return plugin.constructor.name !== 'OptimizeCssAssetsWebpackPlugin';
+      });
+
+      // 禁用源映射生成以避免构建问题
+      webpackConfig.devtool = false;
+
       return webpackConfig;
     }
   }
