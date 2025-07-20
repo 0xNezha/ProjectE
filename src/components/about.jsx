@@ -15,8 +15,8 @@ function About({ closeAboutModal }) {
       <S.styledModalFrame bg="white" boxShadow="$in">
       <h1>🔷 Project E 🔶</h1>
                 <p>
-                <h3>勇敢的 E 卫兵啊，快去创造奇迹</h3>
-                <h3>   (单击桌面图标开始操作)</h3>
+                <h3> 【 欢迎使用 EthGuards 95 操作系统 】</h3>
+                <h3>  勇敢的 E 卫兵啊，快去创造奇迹</h3>
                 </p>
 
                 <p>

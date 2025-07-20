@@ -4,15 +4,18 @@
   "version": "0.1.1",
   "private": true,
   "dependencies": {
+    "@primuslabs/zktls-js-sdk": "^0.3.3",
     "@react95/clippy": "^2.0.2",
     "@react95/core": "^9.2.1",
     "@react95/icons": "^2.0.4",
+    "@tanstack/react-query": "^5.83.0",
     "@vitejs/plugin-react": "^4.3.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "sass": "^1.81.0",
     "styled-components": "^6.1.13",
     "vite": "^6.0.1",
+    "wagmi": "^2.16.0",
     "yarn": "^1.22.10"
   },
   "scripts": {
