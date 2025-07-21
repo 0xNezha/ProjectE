@@ -8,6 +8,7 @@ function About({ closeAboutModal }) {
     <S.styledModal
       icon={<Textchat variant="16x16_4" />}
       title={"关于本系统"}
+      style={{ left: '10%' }}
       titleBarOptions={[
         <TitleBar.Close onClick={closeAboutModal} key="close" />,
       ]}

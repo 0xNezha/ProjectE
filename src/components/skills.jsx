@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { TitleBar, ProgressBar, Button, Frame } from "@react95/core";
+import { TitleBar, Button, Frame } from "@react95/core";
 import { BatExec2 } from "@react95/icons";
-import { useAccount } from 'wagmi';
+import { useAccount, useWriteContract } from 'wagmi';
+import { parseAbi, parseEther } from 'viem';
 import { PrimusZKTLS } from "@primuslabs/zktls-js-sdk";
 import * as S from "./layoutStyling";
+
+// --- Contract Configuration ---
+const contractAddress = '0x148A6Bb8A8C8d48f5191EE7F582Af790b2597b36';
+const contractAbi = parseAbi([
+    'function mintGuardNFT((string version, string attMode, string attester, string attesterPubKey, string data, string signature) attestation, string rank, uint256 ethAmount)'
+]);
 
 // Initialize zkTLS SDK
 let primusZKTLS = null;
@@ -76,7 +83,8 @@ const primusProof = async (userAddress) => {
             return {
                 success: true,
                 assets: topAssets,
-                rawData: parsedData
+                rawData: parsedData,
+                attestation: attestation // Return the full attestation object
             };
         } else {
             throw new Error("验证失败");
@@ -104,12 +112,31 @@ const getRank = (ethAmount) => {
     return "E列兵";
 };
 
+// Maps display rank name to contract enum string
+const getRankEnum = (rank) => {
+    const rankMap = {
+        "E列兵": "E_PRIVATE",
+        "E中尉": "E_LIEUTENANT",
+        "E上尉": "E_CAPTAIN",
+        "E少校": "E_MAJOR",
+        "E中校": "E_LIEUTENANT_COLONEL",
+        "E大校": "E_COLONEL",
+        "E少将": "E_BRIGADIER_GENERAL",
+        "E中将": "E_MAJOR_GENERAL",
+        "E上将": "E_LIEUTENANT_GENERAL",
+        "E元帅": "E_MARSHAL",
+    };
+    return rankMap[rank] || "E_PRIVATE";
+}
+
 function Skills({ closeSkillsModal }) {
   const { address, isConnected } = useAccount();
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
   const [error, setError] = useState(null);
   const [isInitializing, setIsInitializing] = useState(false);
+
+  const { data: hash, error: mintError, isPending: isMinting, writeContract } = useWriteContract();
 
   useEffect(() => {
     const init = async () => {
@@ -155,7 +182,8 @@ function Skills({ closeSkillsModal }) {
           assets,
           hasETH,
           ethAmount,
-          rank: hasETH ? getRank(ethAmount) : null
+          rank: hasETH ? getRank(ethAmount) : null,
+          attestation: result.attestation // Store attestation object
         });
       } else {
         setError(result.error || "验证失败");
@@ -166,6 +194,36 @@ function Skills({ closeSkillsModal }) {
     } finally {
       setIsVerifying(false);
     }
+  };
+
+  const handleMintNFT = () => {
+    if (!verificationResult || !verificationResult.hasETH) {
+        setError("验证数据无效，无法铸造 NFT");
+        return;
+    }
+
+    const { attestation, rank, ethAmount } = verificationResult;
+    
+    // The attestation object from the SDK needs to be structured for the contract call
+    const contractAttestation = {
+        version: attestation.version,
+        attMode: attestation.att_mode,
+        attester: attestation.attester,
+        attesterPubKey: attestation.attester_pub_key,
+        data: attestation.data,
+        signature: attestation.signature,
+    };
+
+    const rankEnum = getRankEnum(rank);
+    const ethAmountInWei = parseEther(ethAmount.toString());
+
+    writeContract({
+        address: contractAddress,
+        abi: contractAbi,
+        functionName: 'mintGuardNFT',
+        args: [contractAttestation, rankEnum, ethAmountInWei],
+        chainId: 10143, // Explicitly set chainId for Monad Testnet
+    });
   };
 
   return (
@@ -294,39 +352,61 @@ function Skills({ closeSkillsModal }) {
               </div>
 
               {verificationResult.hasETH && (
-                <div style={{
-                  padding: '15px',
-                  backgroundColor: '#fff3cd',
-                  border: '1px solid #ffeaa7',
-                  borderRadius: '4px',
-                  textAlign: 'center',
-                  marginBottom: '20px'
-                }}>
+                <>
                   <div style={{
-                    fontSize: '18px',
-                    fontWeight: 'bold',
-                    marginBottom: '10px',
-                    color: '#856404'
+                    padding: '15px',
+                    backgroundColor: '#fff3cd',
+                    border: '1px solid #ffeaa7',
+                    borderRadius: '4px',
+                    textAlign: 'center',
+                    marginBottom: '20px'
                   }}>
-                    🏆️ 军衔认证
+                    <div style={{
+                      fontSize: '18px',
+                      fontWeight: 'bold',
+                      marginBottom: '10px',
+                      color: '#856404'
+                    }}>
+                      🏆️ 军衔认证
+                    </div>
+
+                    <div style={{
+                      fontSize: '24px',
+                      fontWeight: 'bold',
+                      color: '#d39e00',
+                      marginBottom: '10px'
+                    }}>
+                      {verificationResult.rank}
+                    </div>
+
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#856404'
+                    }}>
+                      ETH 持有量: {verificationResult.ethAmount.toFixed(6)} ETH
+                    </div>
                   </div>
 
-                  <div style={{
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                    color: '#d39e00',
-                    marginBottom: '10px'
-                  }}>
-                    {verificationResult.rank}
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <Button
+                      onClick={handleMintNFT}
+                      disabled={isMinting}
+                      style={{
+                        padding: '12px 24px',
+                        fontSize: '14px',
+                        minWidth: '120px',
+                        backgroundColor: isMinting ? '#ccc' : '#28a745',
+                        color: 'white'
+                      }}
+                    >
+                      {isMinting ? '铸造中...' : '铸造 E卫兵 NFT'}
+                    </Button>
                   </div>
 
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#856404'
-                  }}>
-                    ETH 持有量: {verificationResult.ethAmount.toFixed(6)} ETH
-                  </div>
-                </div>
+                  {hash && <div style={{color: 'green', textAlign: 'center', marginBottom: '10px'}}>✅ NFT 铸造成功！交易哈希: {hash}</div>}
+                  {mintError && <div style={{color: 'red', textAlign: 'center', marginBottom: '10px'}}>❌ 铸造失败: {mintError.shortMessage || mintError.message}</div>}
+
+                </>
               )}
 
               <div style={{ marginBottom: '20px' }}>

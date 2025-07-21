@@ -19,8 +19,10 @@ function Portfolio({ closePortfolio }) {
                 <p>         
                     <ul>
                         <li><b>1、安装 Primus 浏览器扩展</b></li>
-                        <li><b>2、单击“连接钱包”以登陆系统</b></li>
-                        <li><b>3、点击“E卫兵认证”验证 BN 资产</b></li>
+                        <li><b>2、在浏览器登陆 www.binance.com</b></li>
+                        <li><b>3、单击“连接钱包”，登陆去中心化网络</b></li>
+                        <li><b>4、单击 “E卫兵认证” 验证 BN 资产</b></li>
+                        <li><b>5、在 Monad 网络上铸造E卫兵 NFT</b></li>
                     </ul>
                 </p>
       </S.styledModalFrame>
